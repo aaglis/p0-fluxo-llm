@@ -185,7 +185,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Os 52 testes em [`tests/`](tests) usam um cliente simulado no lugar do Claude. Não precisam de chave nem de internet e não geram custo. Eles cobrem a validação da entrada, a configuração, a montagem da solicitação, a tradução de cada erro da API (401, 403, 404, 429, 500, 529, timeout e falha de conexão), respostas inválidas, a verificação de trechos, a limpeza da saída o fluxo completo do `main.py`, incluindo credencial ausente e credencial inválida sem expor a chave, e a ausência de segredos e conteúdo nos registros.
+Os 53 testes em [`tests/`](tests) usam um cliente simulado no lugar do Claude. Não precisam de chave nem de internet e não geram custo. Eles cobrem a validação da entrada, a configuração, a montagem da solicitação, a tradução de cada erro da API (401, 403, 404, 429, 500, 529, timeout e falha de conexão), respostas inválidas, a verificação de trechos, a limpeza da saída o fluxo completo do `main.py`, incluindo credencial ausente e credencial inválida sem expor a chave, e a ausência de segredos e conteúdo nos registros.
 
 O [GitHub Actions](.github/workflows/testes.yml) executa esses testes a cada push, em Python 3.10, 3.11, 3.12, 3.13 e 3.14.
 
@@ -203,6 +203,30 @@ Executados manualmente, com chamadas reais ao Claude:
 | Timeout | `TIMEOUT_SEGUNDOS=0.01 python main.py ...` | Mensagem de tempo esgotado |
 | Falha de comunicação | `ANTHROPIC_BASE_URL=http://127.0.0.1:9 python main.py ...` | Mensagem de falha de conexão |
 | Resposta cortada | `MAX_TOKENS=50 python main.py ...` | Mensagem de resposta cortada |
+
+## Validação em ambiente limpo
+
+A versão final foi validada a partir de um clone novo do GitHub, seguindo apenas este README, em três ambientes diferentes do usado no desenvolvimento:
+
+| Ambiente | Resultado |
+|---|---|
+| macOS, `python3` do sistema (3.9.6), venv novo | ❌ `pip install` falhou com `No matching distribution found for anthropic==2.8.0` |
+| macOS, Python 3.12.16, venv novo | ✅ 53 testes passando, análise real, entrada via pipe, `--help` e registros sem segredos |
+| Container Docker `python:3.12-alpine` | ✅ 53 testes passando, análise real, credencial ausente e credencial inválida (401 real) |
+| GitHub Actions (Ubuntu), Python 3.10 a 3.14 | ✅ Testes passando em todas as versões |
+
+**Problemas encontrados e correções:**
+
+1. **Python antigo do sistema.** O `python3` que vem com o macOS é a versão 3.9, e as bibliotecas exigem 3.10 ou superior. A mensagem do `pip` não deixa isso claro. *Correção:* o README passou a pedir a conferência com `python3 --version` e a explicar o erro na seção "Problemas comuns".
+2. **Registro vazando no terminal.** Sem a chave configurada, aparecia a linha `Execução encerrada com erro: CredencialAusente` antes da mensagem de erro, mesmo sem `--verbose`. O erro acontecia antes da configuração dos registros, e o Python imprimia o aviso pelo manipulador padrão. Nos testes do desenvolvimento isso não aparecia, porque o pytest captura os registros. *Correção:* o pacote passou a registrar um `NullHandler` ([`__init__.py`](leitor_contratos/__init__.py)), e foi criado um teste que executa o programa em um subprocesso para reproduzir o comportamento real.
+
+## Problemas comuns
+
+| Sintoma | Causa e solução |
+|---|---|
+| `No matching distribution found for anthropic==2.8.0` | O Python é anterior à 3.10. Instale uma versão mais nova e recrie o venv |
+| `A chave de acesso ao Claude não foi configurada` | O `.env` não existe ou a chave não foi preenchida |
+| `A chave de acesso foi recusada pelo Claude` | Chave incorreta, revogada ou sem créditos na conta |
 
 ## Decisões
 
