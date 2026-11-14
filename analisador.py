@@ -1,5 +1,3 @@
-"""Núcleo da aplicação: monta a solicitação, chama o Claude e devolve o relatório."""
-
 import os
 
 import anthropic
@@ -38,12 +36,10 @@ Regras:
 
 
 def criar_cliente() -> anthropic.Anthropic:
-    """Cria o cliente da API. A chave é lida da variável de ambiente ANTHROPIC_API_KEY."""
     return anthropic.Anthropic()
 
 
 def analisar_contrato(texto_contrato: str, cliente: anthropic.Anthropic | None = None) -> str:
-    """Envia o contrato ao Claude e devolve o relatório em texto."""
     cliente = cliente or criar_cliente()
     modelo = os.getenv("ANTHROPIC_MODEL", MODELO_PADRAO)
 

@@ -1,11 +1,3 @@
-"""Leitor de Contratos - aponta cláusulas de risco de um contrato, em português simples.
-
-Uso:
-    python main.py caminho/do/contrato.txt   # lê o contrato de um arquivo
-    python main.py                           # cola o texto no terminal e finaliza com Ctrl+D
-    cat contrato.txt | python main.py        # recebe o texto pela entrada padrão
-"""
-
 import os
 import sys
 from pathlib import Path
@@ -16,7 +8,6 @@ from analisador import analisar_contrato
 
 
 def ler_entrada(argumentos: list[str]) -> str:
-    """Obtém o texto do contrato a partir de um arquivo ou da entrada padrão."""
     if argumentos:
         return Path(argumentos[0]).read_text(encoding="utf-8")
 
