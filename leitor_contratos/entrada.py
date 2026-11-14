@@ -1,3 +1,4 @@
+import logging
 import sys
 import unicodedata
 from dataclasses import dataclass
@@ -7,6 +8,8 @@ from typing import TextIO
 from .erros import EntradaInvalida
 
 PERMITIDOS = {"\n", "\t"}
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -65,4 +68,5 @@ def preparar_texto(bruto: str, max_caracteres: int) -> TextoPreparado:
             f"O texto tem {len(limpo)} caracteres e o limite configurado é {max_caracteres}.",
             dica="Analise o contrato em partes ou ajuste MAX_CARACTERES no .env.",
         )
+    logger.info("Entrada preparada: %d caracteres, %d caracteres ocultos removidos", len(limpo), removidos)
     return TextoPreparado(texto=limpo, caracteres_ocultos_removidos=removidos)

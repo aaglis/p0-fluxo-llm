@@ -1,3 +1,4 @@
+import logging
 import re
 from dataclasses import dataclass
 
@@ -6,6 +7,8 @@ from pydantic import ValidationError
 
 from .erros import RespostaInvalida
 from .modelos import Analise, PontoDeAtencao
+
+logger = logging.getLogger(__name__)
 
 ASPAS = str.maketrans({"“": '"', "”": '"', "‘": "'", "’": "'", "–": "-", "—": "-"})
 
@@ -42,7 +45,8 @@ def extrair_analise(resposta: Message) -> Analise:
 
     try:
         return Analise.model_validate_json(texto)
-    except ValidationError:
+    except ValidationError as erro:
+        logger.warning("Resposta fora do esquema: %d erro(s) de validação", erro.error_count())
         raise RespostaInvalida("O Claude devolveu uma resposta em formato inesperado.", dica="Tente novamente.")
 
 
@@ -58,4 +62,9 @@ def trecho_existe(trecho: str, texto_original: str) -> bool:
 def verificar(analise: Analise, texto_original: str) -> Resultado:
     pontos = [PontoVerificado(p, trecho_existe(p.trecho, texto_original)) for p in analise.pontos_de_atencao]
     manipulacoes = [t for t in analise.tentativas_de_manipulacao if trecho_existe(t, texto_original)]
-    return Resultado(analise=analise, pontos=pontos, manipulacoes_confirmadas=manipulacoes)
+    resultado = Resultado(analise=analise, pontos=pontos, manipulacoes_confirmadas=manipulacoes)
+    logger.info(
+        "Análise verificada: eh_contrato=%s pontos=%d trechos_nao_encontrados=%d manipulacoes=%d",
+        analise.eh_contrato, len(pontos), resultado.trechos_nao_encontrados, len(manipulacoes),
+    )
+    return resultado

@@ -4,7 +4,7 @@ import pytest
 
 from leitor_contratos import erros
 from leitor_contratos.apresentacao import formatar_erro
-from leitor_contratos.cliente_llm import solicitar_analise
+from leitor_contratos.cliente_llm import criar_cliente, solicitar_analise
 from leitor_contratos.prompt import montar_solicitacao
 from tests.conftest import CHAVE_FALSA, ClienteSimulado, mensagem
 
@@ -42,4 +42,11 @@ def test_envia_parametros_da_configuracao(config):
     chamada = cliente.chamadas[0]
     assert chamada["model"] == config.modelo
     assert chamada["max_tokens"] == config.max_tokens
-    assert "output_config" in chamada
+    assert chamada["output_config"]["effort"] == config.esforco
+    assert chamada["output_config"]["format"]["type"] == "json_schema"
+
+
+def test_cliente_usa_timeout_e_tentativas_da_configuracao(config):
+    cliente = criar_cliente(config)
+    assert cliente.max_retries == config.max_tentativas
+    assert cliente.timeout == config.timeout
