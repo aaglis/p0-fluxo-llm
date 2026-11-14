@@ -1,3 +1,8 @@
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 import anthropic
 import httpx2
 
@@ -72,3 +77,15 @@ def test_modo_verboso_mostra_registros_no_terminal(monkeypatch, capsys, tmp_path
     monkeypatch.setattr(main, "criar_cliente", lambda config: ClienteSimulado(resposta=mensagem(analise_json())))
     assert main.executar(["--verbose", str(contrato)]) == 0
     assert "Enviando solicitação" in capsys.readouterr().err
+
+
+def test_terminal_sem_chave_mostra_apenas_a_mensagem(tmp_path):
+    raiz = Path(__file__).resolve().parent.parent
+    ambiente = {**os.environ, "ANTHROPIC_API_KEY": "", "LOG_ARQUIVO": ""}
+    processo = subprocess.run(
+        [sys.executable, str(raiz / "main.py"), "contrato.txt"],
+        cwd=tmp_path, env=ambiente, capture_output=True, text=True, timeout=60,
+    )
+    assert processo.returncode == 1
+    assert processo.stderr.strip().splitlines()[0] == "Erro: A chave de acesso ao Claude não foi configurada."
+    assert "Execução encerrada" not in processo.stderr
