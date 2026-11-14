@@ -5,6 +5,7 @@ from .erros import ErroAplicacao
 from .resposta import Resultado
 
 ROTULOS = {"alto": "ALTO", "medio": "MÉDIO", "baixo": "BAIXO"}
+ORDEM = {"alto": 0, "medio": 1, "baixo": 2}
 LARGURA = 90
 AVISO_FINAL = "Este relatório não substitui a orientação de um advogado."
 
@@ -39,7 +40,7 @@ def formatar_relatorio(resultado: Resultado, caracteres_ocultos: int = 0) -> str
         linhas.append("")
 
     linhas.append(f"PONTOS DE ATENÇÃO ({len(resultado.pontos)})")
-    for item in resultado.pontos:
+    for item in sorted(resultado.pontos, key=lambda p: ORDEM[p.ponto.risco]):
         ponto = item.ponto
         linhas.append("")
         linhas.append(f"[{ROTULOS[ponto.risco]}] {sanitizar(ponto.titulo)}")
