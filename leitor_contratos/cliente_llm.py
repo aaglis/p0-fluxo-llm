@@ -14,7 +14,7 @@ from .prompt import Solicitacao
 
 
 def criar_cliente(config: Config) -> anthropic.Anthropic:
-    return anthropic.Anthropic(api_key=config.api_key, timeout=config.timeout)
+    return anthropic.Anthropic(api_key=config.api_key, timeout=config.timeout, max_retries=config.max_tentativas)
 
 
 def solicitar_analise(cliente: anthropic.Anthropic, config: Config, solicitacao: Solicitacao) -> Message:
@@ -24,7 +24,7 @@ def solicitar_analise(cliente: anthropic.Anthropic, config: Config, solicitacao:
             max_tokens=config.max_tokens,
             system=solicitacao.system,
             messages=solicitacao.messages,
-            output_config=solicitacao.output_config,
+            output_config={**solicitacao.output_config, "effort": config.esforco},
         )
     except anthropic.AuthenticationError:
         raise CredencialInvalida(
