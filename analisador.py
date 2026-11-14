@@ -4,7 +4,7 @@ import os
 
 import anthropic
 
-MODELO_PADRAO = "claude-opus-5-5"
+MODELO_PADRAO = "claude-haiku-5-5"
 MAX_TOKENS = 16000
 
 PROMPT_SISTEMA = """Você é um assistente que ajuda pessoas comuns, sem formação jurídica, \

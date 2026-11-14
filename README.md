@@ -18,7 +18,7 @@ Aplicação de terminal em Python que lê um contrato e aponta, em português si
 | Item | Escolha |
 |---|---|
 | Provedor | Anthropic (Claude), via API oficial |
-| Modelo padrão | `claude-opus-5-5` (configurável pela variável `ANTHROPIC_MODEL`) |
+| Modelo padrão | `claude-haiku-5-5` (configurável pela variável `ANTHROPIC_MODEL`) |
 | Biblioteca | SDK oficial `anthropic` para Python, que faz as chamadas HTTPS à API REST `POST /v1/messages` |
 | Custo | Por conta do estudante. Uma análise de contrato típica custa poucos centavos de dólar |
 
