@@ -5,12 +5,15 @@
 Aplicação de terminal em Python que lê um contrato e aponta, em português simples, as cláusulas que podem trazer custo, obrigação ou risco para quem vai assinar, usando o Claude (Anthropic) por meio da API.
 
 > Projeto P0 (Primeiro fluxo com LLM). Status atual: **nível Avançado**.
+>
+> 🎥 **Vídeo de demonstração:** [assistir no YouTube](LINK_DO_VIDEO) · 📄 **Relatório:** [RELATORIO_EXECUCAO.md](RELATORIO_EXECUCAO.md)
 
 ## O problema
 
 **Em uma frase:** pessoas assinam contratos de aluguel, academia, telefonia, internet e cursos sem entender cláusulas como multa rescisória, fidelidade, renovação automática e reajuste, e só descobrem o problema quando já estão presas a elas.
 
-- **Quem tem essa necessidade:** qualquer pessoa sem formação jurídica que precise assinar um contrato de consumo ou de locação. Eu mesmo, e pessoas próximas, já passamos por isso (por exemplo, com academia e plano de internet).
+- **Usuário:** qualquer pessoa sem formação jurídica que precise assinar um contrato de consumo ou de locação (aluguel, academia, telefonia, internet, cursos, termos de serviço) e queira saber, antes de assinar, o que pode custar caro. Eu mesmo, e pessoas próximas, já passamos por isso (por exemplo, com academia e plano de internet).
+- **Resultado esperado:** em menos de um minuto, a pessoa sabe quais cláusulas merecem atenção, por quê, e o que perguntar à outra parte.
 - **Entrada:** o texto do contrato (arquivo `.txt` ou texto colado no terminal).
 - **Saída:** um relatório com resumo, pontos de atenção classificados por risco (alto, médio e baixo), cada um com o trecho do contrato e uma explicação simples, e perguntas para fazer antes de assinar.
 - **Por que um LLM:** contratos usam linguagem jurídica, têm estrutura variável e escondem riscos no meio do texto. Regras fixas (palavras-chave, regex) não conseguem interpretar o sentido de uma cláusula nem explicá-la em linguagem simples. Um modelo de linguagem consegue.
@@ -25,6 +28,16 @@ Aplicação de terminal em Python que lê um contrato e aponta, em português si
 | Custo | Por conta do estudante. Uma análise de contrato típica custa poucos centavos de dólar |
 
 **Por que não o LLM institucional:** o LLM institucional (Ollama com Qwen) só é acessível de dentro dos containers da plataforma Devel, o que obriga a gerar e enviar uma imagem Docker a cada teste. Preferi um serviço que qualquer pessoa consegue usar localmente com uma chave de API, o que facilita o desenvolvimento e a reprodução por terceiros. A instituição não presta suporte a este provedor.
+
+## Limites do projeto
+
+O que a aplicação **não** faz, por decisão de escopo:
+
+- Não lê PDF, Word ou imagens: o contrato precisa estar em texto (`.txt` em UTF-8 ou colado no terminal).
+- Não analisa contratos acima de `MAX_CARACTERES` (100 mil caracteres por padrão, cerca de 30 páginas).
+- Não dá parecer jurídico, não diz se uma cláusula é ilegal e não consulta leis ou jurisprudência.
+- Não guarda histórico das análises nem tem interface gráfica.
+- Não usa ferramentas (tools), agentes nem banco vetorial: é uma única chamada ao modelo por análise.
 
 ## Como executar
 
@@ -185,7 +198,7 @@ pip install -r requirements-dev.txt
 pytest
 ```
 
-Os 53 testes em [`tests/`](tests) usam um cliente simulado no lugar do Claude. Não precisam de chave nem de internet e não geram custo. Eles cobrem a validação da entrada, a configuração, a montagem da solicitação, a tradução de cada erro da API (401, 403, 404, 429, 500, 529, timeout e falha de conexão), respostas inválidas, a verificação de trechos, a limpeza da saída o fluxo completo do `main.py`, incluindo credencial ausente e credencial inválida sem expor a chave, e a ausência de segredos e conteúdo nos registros.
+Os 53 testes em [`tests/`](tests) usam um cliente simulado no lugar do Claude. Não precisam de chave nem de internet e não geram custo. Eles cobrem a validação da entrada, a configuração, a montagem da solicitação, a tradução de cada erro da API (401, 403, 404, 429, 500, 529, timeout e falha de conexão), respostas inválidas, a verificação de trechos, a limpeza da saída, o fluxo completo do `main.py`, incluindo credencial ausente e credencial inválida sem expor a chave, e a ausência de segredos e conteúdo nos registros.
 
 O [GitHub Actions](.github/workflows/testes.yml) executa esses testes a cada push, em Python 3.10, 3.11, 3.12, 3.13 e 3.14.
 
@@ -219,6 +232,16 @@ A versão final foi validada a partir de um clone novo do GitHub, seguindo apena
 
 1. **Python antigo do sistema.** O `python3` que vem com o macOS é a versão 3.9, e as bibliotecas exigem 3.10 ou superior. A mensagem do `pip` não deixa isso claro. *Correção:* o README passou a pedir a conferência com `python3 --version` e a explicar o erro na seção "Problemas comuns".
 2. **Registro vazando no terminal.** Sem a chave configurada, aparecia a linha `Execução encerrada com erro: CredencialAusente` antes da mensagem de erro, mesmo sem `--verbose`. O erro acontecia antes da configuração dos registros, e o Python imprimia o aviso pelo manipulador padrão. Nos testes do desenvolvimento isso não aparecia, porque o pytest captura os registros. *Correção:* o pacote passou a registrar um `NullHandler` ([`__init__.py`](leitor_contratos/__init__.py)), e foi criado um teste que executa o programa em um subprocesso para reproduzir o comportamento real.
+
+## Limitações conhecidas
+
+- **Omissões não são detectadas.** A aplicação confere se cada trecho citado existe no contrato, mas não tem como saber se o modelo deixou de apontar uma cláusula de risco.
+- **Resultados variam entre execuções.** O mesmo contrato pode gerar quantidades diferentes de pontos e redações diferentes. O `claude-haiku-5-5` não aceita ajustar `temperature`, então essa variação não pode ser fixada.
+- **A defesa contra prompt injection reduz o risco, mas não o elimina.** Um texto malicioso bem construído ainda pode influenciar o relatório. Como o modelo não executa ações, o dano fica limitado ao texto exibido.
+- **A comparação de trechos é tolerante.** Aspas tipográficas, travessões, espaços e maiúsculas são normalizados; um trecho com uma palavra trocada é marcado como não encontrado, mesmo que o sentido seja o mesmo.
+- **Depende de serviço pago e externo.** Sem internet, sem créditos na conta da Anthropic ou com o serviço fora do ar, a análise não acontece (os testes simulados continuam funcionando).
+
+Os detalhes de como cada limitação foi identificada estão no [relatório de execução](RELATORIO_EXECUCAO.md#falhas-e-limitações).
 
 ## Problemas comuns
 
@@ -270,6 +293,7 @@ O texto do contrato é escrito pela outra parte, que tem interesse em que riscos
 ├── tests/                   # testes simulados (pytest)
 ├── .github/workflows/       # testes automáticos no GitHub Actions
 ├── exemplos/                # contratos fictícios
+├── RELATORIO_EXECUCAO.md     # relatório de execução do projeto
 ├── requirements.txt
 ├── requirements-dev.txt
 └── .env.example
@@ -283,6 +307,10 @@ O texto do contrato é enviado à API da Anthropic. Os exemplos do repositório 
 
 Esta ferramenta ajuda a ler contratos, mas **não substitui a orientação de um advogado**.
 
+## Vídeo de demonstração
+
+[Assistir no YouTube](LINK_DO_VIDEO) (até 5 minutos, com legendas revisadas): problema, organização do repositório, execução com um contrato real, tratamento de falha, decisões técnicas e reflexão.
+
 ## Uso de IA no desenvolvimento
 
-Utilizei o Claude Code (assistente de programação da Anthropic) para discutir ideias de projeto, analisar os requisitos, estruturar o código, escrever testes e redigir esta documentação. As decisões de escopo, provedor e modelo foram minhas, e todo o código foi revisado e testado por mim.
+Utilizei o Claude Code (assistente de programação da Anthropic) para discutir ideias de projeto, analisar os requisitos, estruturar o código, escrever testes e redigir esta documentação. As decisões de escopo, provedor e modelo foram minhas, e todo o código foi revisado e testado por mim. O detalhamento por tarefa (o que foi delegado, o que foi aproveitado, o que foi corrigido e como foi verificado) está no [relatório de execução](RELATORIO_EXECUCAO.md#uso-de-ia-no-desenvolvimento).
